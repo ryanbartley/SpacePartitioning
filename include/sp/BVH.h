@@ -158,7 +158,7 @@ namespace details {
 	class BVHObjectTraits {
 	public:
 		static ci::AxisAlignedBox getBounds( const T &obj ) { CI_LOG_E( "If the BVH template type doesn't have a \"getBounds\" member function, you need to specialize SpacePartitioning::details::BVHObjectTraits<> to provide an alternative." ); return ci::AxisAlignedBox(); }
-		static ci::vec3 getCentroid( const T &obj ) { CI_LOG_E( "If the BVH template type doesn't have a \"getCentroid\" member function, you need to specialize SpacePartitioning::details::BVHObjectTraits<> to provide an alternative." ); return ci::vec3() }
+		static ci::vec3 getCentroid( const T &obj ) { CI_LOG_E( "If the BVH template type doesn't have a \"getCentroid\" member function, you need to specialize SpacePartitioning::details::BVHObjectTraits<> to provide an alternative." ); return ci::vec3(); }
 		static bool intersect( const T &obj, const ci::Ray &ray, float *dist ) { CI_LOG_E( "If the BVH template type doesn't have a \"intersect\" member function, you need to specialize SpacePartitioning::details::BVHObjectTraits<> to provide an alternative." ); return false; }
 	};
 	
