@@ -32,6 +32,7 @@
 
 #include "cinder/AxisAlignedBox.h"
 #include "cinder/Ray.h"
+#include "cinder/Log.h"
 
 namespace SpacePartitioning {
 
@@ -156,9 +157,9 @@ namespace details {
 	template<class T> 
 	class BVHObjectTraits {
 	public:
-		static ci::AxisAlignedBox getBounds( const T &obj ) { static_assert( std::false_type::value, "If the BVH template type doesn't have a \"getBounds\" member function, you need to specialize SpacePartitioning::details::BVHObjectTraits<> to provide an alternative." ); }
-		static ci::vec3 getCentroid( const T &obj ) { static_assert( std::false_type::value, "If the BVH template type doesn't have a \"getCentroid\" member function, you need to specialize SpacePartitioning::details::BVHObjectTraits<> to provide an alternative." ); }
-		static bool intersect( const T &obj, const ci::Ray &ray, float *dist ) { static_assert( std::false_type::value, "If the BVH template type doesn't have a \"intersect\" member function, you need to specialize SpacePartitioning::details::BVHObjectTraits<> to provide an alternative." ); }
+		static ci::AxisAlignedBox getBounds( const T &obj ) { CI_LOG_E( "If the BVH template type doesn't have a \"getBounds\" member function, you need to specialize SpacePartitioning::details::BVHObjectTraits<> to provide an alternative." ); return ci::AxisAlignedBox(); }
+		static ci::vec3 getCentroid( const T &obj ) { CI_LOG_E( "If the BVH template type doesn't have a \"getCentroid\" member function, you need to specialize SpacePartitioning::details::BVHObjectTraits<> to provide an alternative." ); return ci::vec3() }
+		static bool intersect( const T &obj, const ci::Ray &ray, float *dist ) { CI_LOG_E( "If the BVH template type doesn't have a \"intersect\" member function, you need to specialize SpacePartitioning::details::BVHObjectTraits<> to provide an alternative." ); return false; }
 	};
 	
 	template<typename T, typename std::enable_if<BVHObjectHasGetBounds<T>::value,int>::type = 0>
@@ -426,7 +427,7 @@ void BVH<T>::rangeSearch( const ci::Sphere &range, const std::function<bool( T* 
 	// initialize the working structure and temp values
 	std::stack<TraversalNode> stack;
 	uint32_t closer, farther;
-	float sqRadius = sphere.getRadius() * sphere.getRadius();
+	float sqRadius = range.getRadius() * range.getRadius();
 	
 	// push the root node
 	stack.push( TraversalNode( 0, std::numeric_limits<float>::lowest() ) );
@@ -441,7 +442,7 @@ void BVH<T>::rangeSearch( const ci::Sphere &range, const std::function<bool( T* 
 		if( node.mRightOffset == 0 ) {
 			for( uint32_t i = 0; i < node.mNumObjects; ++i ) {
 				const T& obj = (*mObjects)[node.mStart+i];
-				if( glm::distance2( obj.getCentroid(), sphere.getCenter() ) < sqRadius ) {
+				if( glm::distance2( obj.getCentroid(), range.getCenter() ) < sqRadius ) {
 					if( rangeVisitor( &(*mObjects)[node.mStart+i] ) ) {
 						return;
 					}
@@ -450,13 +451,13 @@ void BVH<T>::rangeSearch( const ci::Sphere &range, const std::function<bool( T* 
 		} 
 		else {
 			// check if intersecting with both bounding boxes
-			bool hit0 = mNodes[traversalNode.mIndex+1].mBounds.intersects( sphere );
-			bool hit1 = mNodes[traversalNode.mIndex+node.mRightOffset].mBounds.intersects( sphere );
+			bool hit0 = mNodes[traversalNode.mIndex+1].mBounds.intersects( range );
+			bool hit1 = mNodes[traversalNode.mIndex+node.mRightOffset].mBounds.intersects( range );
 			if( hit0 && hit1 ) {
 				// find out which node is farther
 				closer = traversalNode.mIndex+1;
 				farther = traversalNode.mIndex+node.mRightOffset;
-				if( glm::distance2( mNodes[traversalNode.mIndex+node.mRightOffset].mBounds.getCenter(), sphere.getCenter() ) < glm::distance2( mNodes[traversalNode.mIndex+1].mBounds.getCenter(), sphere.getCenter() ) ) {
+				if( glm::distance2( mNodes[traversalNode.mIndex+node.mRightOffset].mBounds.getCenter(), range.getCenter() ) < glm::distance2( mNodes[traversalNode.mIndex+1].mBounds.getCenter(), range.getCenter() ) ) {
 					std::swap( closer, farther );
 				}
 				// and push it first
